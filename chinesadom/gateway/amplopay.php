@@ -5,11 +5,20 @@ include_once('../ad-min/services/funcao.php');
 include_once('../ad-min/services/crud.php');
 global $mysqli;
 
+// Log de callback
+$logFile = $_SERVER['DOCUMENT_ROOT'] . '/logs/amplopay_callback_' . date('Y-m-d') . '.log';
+$logDir = dirname($logFile);
+if (!is_dir($logDir)) { @mkdir($logDir, 0777, true); }
+
+$rawInput = file_get_contents("php://input");
+file_put_contents($logFile, date('Y-m-d H:i:s') . " - Callback recebido: " . $rawInput . "\n", FILE_APPEND);
+
 // Receber dados da solicitação POST JSON
-$data = json_decode(file_get_contents("php://input"), true);
+$data = json_decode($rawInput, true);
 
 // Verificar se o JSON foi decodificado com sucesso
 if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
+    file_put_contents($logFile, date('Y-m-d H:i:s') . " - ERRO: JSON inválido\n", FILE_APPEND);
     http_response_code(400);
     exit;
 }
@@ -27,6 +36,7 @@ function url_send()
     curl_setopt($ch, CURLOPT_POSTFIELDS, $corpo);
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     $resultado = curl_exec($ch);
     curl_close($ch);
     return $resultado;
@@ -104,8 +114,13 @@ function att_paymentpix($transacao_id)
 #====================================================================#
 # Processar eventos AmploPay
 # Status COMPLETED = pago | evento TRANSACTION_PAID
+file_put_contents($logFile, date('Y-m-d H:i:s') . " - Event: $event | Status: $statusTransaction | ID: $idTransaction\n", FILE_APPEND);
+
 if ($event === 'TRANSACTION_PAID' && $idTransaction && $statusTransaction === 'COMPLETED') {
     $att_transacao = att_paymentpix($idTransaction);
+    file_put_contents($logFile, date('Y-m-d H:i:s') . " - Pagamento processado: transacao=$idTransaction resultado=$att_transacao\n", FILE_APPEND);
+} else {
+    file_put_contents($logFile, date('Y-m-d H:i:s') . " - Evento ignorado (não é TRANSACTION_PAID/COMPLETED)\n", FILE_APPEND);
 }
 
 # Responder 200 para confirmar recebimento

@@ -13,7 +13,6 @@ if (isset($_POST['id'])) {
     if ($gatdef === 'digitopay') {
         global $data_digitopay, $tokendigitopay;
 
-
         if (verifyStatus($tid)) {
             if (!verifyPaid($tid)) {
                 $result = att_paymentpix($tid);
@@ -30,16 +29,31 @@ if (isset($_POST['id'])) {
         echo json_encode($response);
         exit;
     }
-    // Chama a função att_paymentpix com o $tid
-    /* $result = att_paymentpix($tid);
 
-    if ($result == 1) {
-        $response['status'] = 'success';
-        $response['message'] = 'Pagamento atualizado com sucesso';
-    } else {
-        $response['status'] = 'error';
-        $response['message'] = 'Erro ao atualizar pagamento';
-    } */
+    if ($gatdef === 'amplopay') {
+        // Para AmploPay, o callback já processa o pagamento e credita o saldo.
+        // O polling só precisa verificar se o status foi atualizado no BD.
+        $stmt = $mysqli->prepare("SELECT status FROM transacoes WHERE transacao_id = ?");
+        $stmt->bind_param("s", $tid);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result && $result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            if ($row['status'] === 'pago') {
+                $response['status'] = 'success';
+                $response['message'] = 'Pagamento confirmado';
+            } else {
+                $response['status'] = 'pending';
+                $response['message'] = 'Aguardando pagamento';
+            }
+        } else {
+            $response['status'] = 'error';
+            $response['message'] = 'Transação não encontrada';
+        }
+        $stmt->close();
+        echo json_encode($response);
+        exit;
+    }
 } else {
     $response['status'] = 'error';
     $response['message'] = 'ID de transação não fornecido';
@@ -139,7 +153,7 @@ function get_user_by_id($user_id)
 function att_paymentpix($transacao_id)
 {
     global $mysqli;
-    $sql = $mysqli->prepare("UPDATE transacoes SET status='1' WHERE transacao_id=?");
+    $sql = $mysqli->prepare("UPDATE transacoes SET status='pago' WHERE transacao_id=?");
     $sql->bind_param("s", $transacao_id);
     if ($sql->execute()) {
         $buscar = busca_valor_ipn($transacao_id);

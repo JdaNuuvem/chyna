@@ -13,7 +13,6 @@ if (isset($_POST['id'])) {
     if ($gatdef === 'digitopay') {
         global $data_digitopay, $tokendigitopay;
 
-
         if (verifyStatus($tid)) {
             if (!verifyPaid($tid)) {
                 $result = att_paymentpix($tid);
@@ -30,25 +29,31 @@ if (isset($_POST['id'])) {
         echo json_encode($response);
         exit;
     }
-    // Para outros gateways, verifica se o webhook já atualizou o status
-    $checkSql = "SELECT status FROM transacoes WHERE transacao_id = ?";
-    $stmtCheck = $mysqli->prepare($checkSql);
-    $stmtCheck->bind_param("s", $tid);
-    $stmtCheck->execute();
-    $resultCheck = $stmtCheck->get_result();
-    if ($resultCheck && $rowCheck = $resultCheck->fetch_assoc()) {
-        if ($rowCheck['status'] === 'pago') {
-            $response['status'] = 'success';
-            $response['message'] = 'Pagamento confirmado';
+
+    if ($gatdef === 'amplopay') {
+        // Para AmploPay, o callback já processa o pagamento e credita o saldo.
+        // O polling só precisa verificar se o status foi atualizado no BD.
+        $stmt = $mysqli->prepare("SELECT status FROM transacoes WHERE transacao_id = ?");
+        $stmt->bind_param("s", $tid);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result && $result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            if ($row['status'] === 'pago') {
+                $response['status'] = 'success';
+                $response['message'] = 'Pagamento confirmado';
+            } else {
+                $response['status'] = 'pending';
+                $response['message'] = 'Aguardando pagamento';
+            }
         } else {
-            $response['status'] = 'pending';
-            $response['message'] = 'Aguardando pagamento';
+            $response['status'] = 'error';
+            $response['message'] = 'Transação não encontrada';
         }
-    } else {
-        $response['status'] = 'error';
-        $response['message'] = 'Transação não encontrada';
+        $stmt->close();
+        echo json_encode($response);
+        exit;
     }
-    $stmtCheck->close();
 } else {
     $response['status'] = 'error';
     $response['message'] = 'ID de transação não fornecido';
