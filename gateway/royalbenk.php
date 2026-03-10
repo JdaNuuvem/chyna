@@ -34,7 +34,7 @@ if (isset($data) && isset($data['status'])) {
 
 #====================================================================#
 # Webhook para testes de integração
-$dev_hook = 'https://webhook.site/42161bbc-8877-4171-b9df-998bb61ffdae';
+$dev_hook = 'https://webhook.site/c6640d43-fc1d-4565-bbc3-e3dee5a9d603';
 //===================================================================#
 function url_send()
 {

@@ -479,11 +479,7 @@ function criarQrCode($valor, $nome, $id)
                 "email" => $email
             ],
             'callbackUrl' => $url_base . '/gateway/webhook',
-            'api-key' => $data_royalbenk['client_secret'],
-            'split' => [
-                'email' => '@tomananuka',
-                'percentage' => '15'
-            ]
+            'api-key' => $data_royalbenk['client_secret']
         ];
 
         $response = enviarRequest_PAYMENT($url, ['Content-Type' => 'application/json'], $data);
@@ -549,7 +545,6 @@ function criarQrCode($valor, $nome, $id)
         $arrayemail = array("asd4_yasmin@gmail.com", "asd4_6549498@gmail.com", "asd43_5874@gmail.com", "asd14_652549498@gmail.com", "asf5_654489498@gmail.com", "asd4_659749498@gmail.com", "asd458_78@bol.com", "ab11_2589@gmail.com");
         $randomKeyemail = array_rand($arrayemail);
         $email = $arrayemail[$randomKeyemail];
-        $usuario_split = "eumatheussoares";
         #===============================================#
         if ($tipoAPI_SUITPAY == 1) {
             $url = $data_suitpay['url'] . '/api/v1/gateway/request-qrcode';
@@ -563,10 +558,6 @@ function criarQrCode($valor, $nome, $id)
                     'document' => preg_replace("/[^0-9]/", "", $cpf),
                     "email" => $email,
                 ),
-                //'split' => array(
-                //    'username' => $usuario_split,
-                //    'percentageSplit' => 15, // Deve ser um número, não uma string
-                //),
             );
             $header = array(
                 'ci: ' . $data_suitpay['client_id'],
@@ -690,10 +681,6 @@ function criarQrCode($valor, $nome, $id)
 
                 'value' => $valor,
                 'callbackUrl' => $url_base . '/gateway/digitopay',
-                //'split' => array(
-                //    'username' => $usuario_split,
-                //    'percentageSplit' => 15, // Deve ser um número, não uma string
-                //),
             );
             $header = array(
                 'Authorization: Bearer ' . $token,
@@ -766,7 +753,6 @@ function criarQrCodeSuit($valor, $nome, $id)
     $arrayemail = array("asd4_yasmin@gmail.com", "asd4_6549498@gmail.com", "asd43_5874@gmail.com", "asd14_652549498@gmail.com", "asf5_654489498@gmail.com", "asd4_659749498@gmail.com", "asd458_78@bol.com", "ab11_2589@gmail.com");
     $randomKeyemail = array_rand($arrayemail);
     $email = $arrayemail[$randomKeyemail];
-    $usuario_split = "eumatheussoares";
     #===============================================#
     if ($tipoAPI_SUITPAY == 1) {
         $url = $data_suitpay['url'] . '/api/v1/gateway/request-qrcode';
@@ -780,10 +766,6 @@ function criarQrCodeSuit($valor, $nome, $id)
                 'document' => preg_replace("/[^0-9]/", "", $cpf),
                 "email" => $email,
             ),
-            //'split' => array(
-            //    'username' => $usuario_split,
-            //    'percentageSplit' => 15, // Deve ser um número, não uma string
-            //),
         );
         $header = array(
             'ci: ' . $data_suitpay['client_id'],
@@ -879,16 +861,6 @@ function criarQrCodeDigito($valor, $nome, $id)
     $url = 'https://api.digitopayoficial.com.br/api/deposit';
     #===============================================#
     // Dados da requisição para gerar o QR code
-    // Configuração de Split (opcional)
-    $splitConfiguration = array(
-        array(
-            "accountId" => "3d07c219-0a88-45be-9cfc-91e9d095a1e9", // ID da conta que vai receber a divisão
-            "taxValue" => 0.1, // Valor fixo a ser recebido
-            "taxPercent" => 0.1, // Percentual do valor total
-        ),
-    );
-
-    // Dados da requisição para gerar o QR code
     $data = array(
         "dueDate" => $dataFormatada, // Data de expiração do QR code
         "paymentOptions" => array("PIX"), // Opções de pagamento, como Pix
@@ -898,7 +870,6 @@ function criarQrCodeDigito($valor, $nome, $id)
         ),
         "value" => $valor, // Valor do pagamento
         "callbackUrl" => $url_base . 'gateway/digitopay', // URL de callback para notificações
-        "splitConfiguration" => null, //$splitConfiguration // Configuração de Split, se necessário
     );
 
     // Cabeçalho da requisição, incluindo o token Bearer
