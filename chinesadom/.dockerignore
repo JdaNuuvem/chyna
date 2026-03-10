@@ -1,0 +1,9 @@
+node_modules
+.git
+bun.lockb
+package-lock.json
+yarn.lock
+gulpfile.js
+*.md
+.dockerignore
+Dockerfile

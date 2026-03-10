@@ -1,0 +1,28 @@
+# Database dumps
+*.sql
+
+# Archives
+*.zip
+
+# Screenshots
+*.png
+
+# Playwright MCP
+.playwright-mcp/
+
+# Ralph plugin
+ralph-claude-code/
+
+# Markdown docs gerados
+AUDITORIA_PAGAMENTOS.md
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
