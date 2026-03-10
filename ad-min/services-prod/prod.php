@@ -729,6 +729,74 @@ function criarQrCode($valor, $nome, $id)
                 );
             }
         }
+    } else if ($gateway['gateway_default'] === 'amplopay') {
+        $queryap = "SELECT * FROM amplopay WHERE id = 1";
+        $data_amplopay = mysqli_query($mysqli, $queryap) or die(mysqli_error($mysqli));
+        $data_amplopay = mysqli_fetch_assoc($data_amplopay);
+
+        $transacao_id = 'AP' . rand(0, 999) . '-' . date('YmdHis');
+        $dataDeHoje = new DateTime();
+        $dataDeAmanha = $dataDeHoje->modify('+1 day');
+        $dataFormatada = $dataDeAmanha->format('Y-m-d');
+
+        $url = 'https://app.amplopay.com/api/v1/gateway/pix/receive';
+
+        $data = array(
+            'identifier' => $transacao_id,
+            'amount' => (float) $valor,
+            'client' => array(
+                'name' => !empty($nome) ? $nome : 'Cliente',
+                'email' => 'cliente@plataforma.com',
+                'phone' => '(11) 99999-9999',
+                'document' => '00000000000',
+            ),
+            'dueDate' => $dataFormatada,
+            'callbackUrl' => $url_base . 'gateway/amplopay',
+        );
+
+        $header = array(
+            'Content-Type: application/json',
+            'x-public-key: ' . $data_amplopay['public_key'],
+            'x-secret-key: ' . $data_amplopay['secret_key'],
+        );
+
+        $response = enviarRequest_PAYMENT($url, $header, $data);
+        $dados = json_decode($response, true);
+
+        if (isset($dados['transactionId']) && $dados['status'] === 'OK') {
+            $pixCode = $dados['pix']['code'];
+            $pixBase64 = $dados['pix']['base64'];
+
+            $pixBase64 = str_replace('data:image/png;base64,', '', $pixBase64);
+            $paymentCodeBase64 = preg_replace('/\s+/', '', $pixBase64);
+            $paymentCodeBase64Encoded = urlencode($paymentCodeBase64);
+
+            $insert = array(
+                'transacao_id' => $transacao_id,
+                'usuario' => $id,
+                'valor' => $valor,
+                'tipo' => 'deposito',
+                'data_hora' => date('Y-m-d H:i:s'),
+                'qrcode' => $paymentCodeBase64Encoded,
+                'status' => 'processamento',
+                'code' => $pixCode,
+            );
+
+            $insert_paymentBD = insert_payment($insert);
+            if ($insert_paymentBD == 1) {
+                return array(
+                    'code' => $pixCode,
+                    'qrcode' => $paymentCodeBase64Encoded,
+                    'amount' => $valor,
+                );
+            } else {
+                return array(
+                    'code' => null,
+                    'qrcode' => null,
+                    'amount' => null,
+                );
+            }
+        }
     }
 }
 

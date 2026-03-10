@@ -10,6 +10,7 @@ RewriteBase /
 RewriteRule ^api/(.*)$ api/v1/api.php [QSA,L]
 
 RewriteRule  ^playfiver/webhook		callback/playfiver.php	 		 [NC,L]
+RewriteRule  ^gateway/amplopay		gateway/amplopay.php	 		 [NC,L]
 
 # Se o arquivo ou diretório não existir, redirecione para o index.php
 RewriteCond %{REQUEST_FILENAME} !-f
