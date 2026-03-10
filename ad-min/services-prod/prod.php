@@ -730,6 +730,9 @@ function criarQrCode($valor, $nome, $id)
             }
         }
     } else if ($gateway['gateway_default'] === 'amplopay') {
+        $logFile = $_SERVER['DOCUMENT_ROOT'] . '/logs/amplopay_' . date('Y-m-d') . '.log';
+        $logDir = dirname($logFile);
+        if (!is_dir($logDir)) { @mkdir($logDir, 0777, true); }
         file_put_contents($logFile, date('Y-m-d H:i:s') . " - Gateway AmploPay selecionado\n", FILE_APPEND);
 
         $queryap = "SELECT * FROM amplopay WHERE id = 1";

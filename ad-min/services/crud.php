@@ -603,6 +603,7 @@ function enviarRequest_PAYMENT($url, $header, $data = null)
     }
     curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
     // Executando a requisição e obtendo a resposta
     $response = curl_exec($ch);
