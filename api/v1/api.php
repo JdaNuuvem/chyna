@@ -77,6 +77,10 @@ include_once "./../../ad-min/services/database.php";
 include_once "./../../ad-min/services/funcao.php";
 include_once "./../../ad-min/services/crud.php";
 
+// Re-habilitar exibição de erros após includes
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 /*-----------------------------------------------------------------------------------------------*/
 
 /* Function Baú */
@@ -1050,8 +1054,23 @@ switch ($requestMethod) {
                 if (mysqli_num_rows($resp) > 0) {
                     $datares = mysqli_fetch_assoc($resp);
 
+                    // Debug: capturar erros fatais
+                    $debugLogFile = $_SERVER['DOCUMENT_ROOT'] . '/debug_deposit.log';
+                    file_put_contents($debugLogFile, date('Y-m-d H:i:s') . " - data recebida: " . print_r($data, true) . "\n", FILE_APPEND);
+                    file_put_contents($debugLogFile, date('Y-m-d H:i:s') . " - amount: " . ($data['amount'] ?? 'NAO DEFINIDO') . "\n", FILE_APPEND);
+                    file_put_contents($debugLogFile, date('Y-m-d H:i:s') . " - usuario: " . $datares['username'] . " id: " . $datares['id'] . "\n", FILE_APPEND);
+
                     //se gerado qr code retorna o pixcode
-                    $return_data_pix = criarQrCode($data['amount'], $datares['real_name'] ?? $datares['username'], $datares['id']);
+                    try {
+                        $return_data_pix = criarQrCode($data['amount'], $datares['real_name'] ?? $datares['username'], $datares['id']);
+                        file_put_contents($debugLogFile, date('Y-m-d H:i:s') . " - criarQrCode retornou: " . print_r($return_data_pix, true) . "\n", FILE_APPEND);
+                    } catch (Exception $e) {
+                        file_put_contents($debugLogFile, date('Y-m-d H:i:s') . " - EXCEPTION: " . $e->getMessage() . "\n", FILE_APPEND);
+                        $return_data_pix = null;
+                    } catch (Error $e) {
+                        file_put_contents($debugLogFile, date('Y-m-d H:i:s') . " - FATAL ERROR: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine() . "\n", FILE_APPEND);
+                        $return_data_pix = null;
+                    }
 
                     if (!empty($return_data_pix) and $return_data_pix != null) {
                         $response = [
