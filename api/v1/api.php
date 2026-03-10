@@ -1970,19 +1970,6 @@ switch ($requestMethod) {
         // Rota Member/platform/list
         if (parse_url($requestURI, PHP_URL_PATH) === '/api/member/platform/list') {
             $rotaEncontrada = true; // Rota encontrada
-            // Verifica se o token está definido
-            $token = getAuthToken();
-            if (!$token) {
-                $response = [
-                    "code" => 0,
-                    "data" => null,
-                    "msg" => "Nenhum token foi encontrado no cabeçalho!",
-                    "time" => time(),
-                ];
-                http_response_code(400);
-                echo json_encode($response);
-                exit;
-            }
             $response = [
                 "status" => true,
                 "data" => [
@@ -2072,19 +2059,6 @@ switch ($requestMethod) {
         // Rota Webset/list
         if (parse_url($requestURI, PHP_URL_PATH) === '/api/member/webset/list') {
             $rotaEncontrada = true; // Rota encontrada
-            // Verifica se o token está definido
-            $token = getAuthToken();
-            if (!$token) {
-                $response = [
-                    "code" => 0,
-                    "data" => null,
-                    "msg" => "Nenhum token foi encontrado no cabeçalho!",
-                    "time" => time(),
-                ];
-                http_response_code(400);
-                echo json_encode($response);
-                exit;
-            }
 
             // var_dump($_GET);
 
@@ -2407,19 +2381,6 @@ switch ($requestMethod) {
         // Rota Member/nav
         if (parse_url($requestURI, PHP_URL_PATH) === '/api/member/nav') {
             $rotaEncontrada = true; // Rota encontrada
-            // Verifica se o token está definido
-            $token = getAuthToken();
-            if (!$token) {
-                $response = [
-                    "code" => 0,
-                    "data" => null,
-                    "msg" => "Nenhum token foi encontrado no cabeçalho!",
-                    "time" => time(),
-                ];
-                http_response_code(400);
-                echo json_encode($response);
-                exit;
-            }
 
             $response = [
                 "status" => true,
@@ -4028,19 +3989,6 @@ switch ($requestMethod) {
         // Rota App/Upgrade
         if (parse_url($requestURI, PHP_URL_PATH) === '/api/member/app/upgrade') {
             $rotaEncontrada = true; // Rota encontrada
-            // Verifica se o token está definido
-            $token = getAuthToken();
-            if (!$token) {
-                $response = [
-                    "code" => 0,
-                    "data" => null,
-                    "msg" => "Nenhum token foi encontrado no cabeçalho!",
-                    "time" => time(),
-                ];
-                http_response_code(400);
-                echo json_encode($response);
-                exit;
-            }
             // Captura a query string
             $queryString = parse_url($requestURI, PHP_URL_QUERY);
             parse_str($queryString, $queryParams);
@@ -4105,19 +4053,6 @@ switch ($requestMethod) {
         // Rota Member/Customer/List
         if (parse_url($requestURI, PHP_URL_PATH) === '/api/member/customer/list') {
             $rotaEncontrada = true; // Rota encontrada
-            // Verifica se o token está definido
-            $token = getAuthToken();
-            if (!$token) {
-                $response = [
-                    "code" => 0,
-                    "data" => null,
-                    "msg" => "Nenhum token foi encontrado no cabeçalho!",
-                    "time" => time(),
-                ];
-                http_response_code(400);
-                echo json_encode($response);
-                exit;
-            }
             // Captura a query string
             $queryString = parse_url($requestURI, PHP_URL_QUERY);
             parse_str($queryString, $queryParams);
@@ -4239,19 +4174,6 @@ switch ($requestMethod) {
         // Rota Member/Point/Statistics
         if (parse_url($requestURI, PHP_URL_PATH) === '/api/member/point/statistics') {
             $rotaEncontrada = true; // Rota encontrada
-            // Verifica se o token está definido
-            $token = getAuthToken();
-            if (!$token) {
-                $response = [
-                    "code" => 0,
-                    "data" => null,
-                    "msg" => "Nenhum token foi encontrado no cabeçalho!",
-                    "time" => time(),
-                ];
-                http_response_code(400);
-                echo json_encode($response);
-                exit;
-            }
             $response = [
                 "status" => true,
                 "data" => [
@@ -4268,19 +4190,6 @@ switch ($requestMethod) {
         // Rota Member/Rebate/Config
         if (parse_url($requestURI, PHP_URL_PATH) === '/api/member/rebate/config') {
             $rotaEncontrada = true; // Rota encontrada
-            // Verifica se o token está definido
-            $token = getAuthToken();
-            if (!$token) {
-                $response = [
-                    "code" => 0,
-                    "data" => null,
-                    "msg" => "Nenhum token foi encontrado no cabeçalho!",
-                    "time" => time(),
-                ];
-                http_response_code(400);
-                echo json_encode($response);
-                exit;
-            }
             $response = [
                 "status" => true,
                 "data" => [
