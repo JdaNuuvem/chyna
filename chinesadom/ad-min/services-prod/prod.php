@@ -168,6 +168,10 @@ function loginBspay()
 function criarQrCode($valor, $nome, $id)
 {
     global $mysqli, $url_base;
+
+    $logFile = $_SERVER['DOCUMENT_ROOT'] . '/gateway/debug_deposit.log';
+    file_put_contents($logFile, date('Y-m-d H:i:s') . " - criarQrCode chamada: valor=$valor, nome=$nome, id=$id, url_base=$url_base\n", FILE_APPEND);
+
     $queryrb = "SELECT * FROM royalbenk WHERE id = 1";
     $data_royalbenk = mysqli_query($mysqli, $queryrb) or die(mysqli_error($mysqli));;
     $data_royalbenk =  mysqli_fetch_assoc($data_royalbenk);
@@ -178,12 +182,15 @@ function criarQrCode($valor, $nome, $id)
     $gateway = mysqli_query($mysqli, $query) or die(mysqli_error($mysqli));
     $gateway =  mysqli_fetch_assoc($gateway);
 
+    file_put_contents($logFile, date('Y-m-d H:i:s') . " - gateway_default=" . $gateway['gateway_default'] . "\n", FILE_APPEND);
 
     if ($gateway['gateway_default'] === 'pixup') {
 
         $querypu = "SELECT * FROM pixup WHERE id = 1";
         $data_pixup = mysqli_query($mysqli, $querypu) or die(mysqli_error($mysqli));;
         $data_pixup =  mysqli_fetch_assoc($data_pixup);
+
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " - PixUp config: url=" . $data_pixup['url'] . ", client_id=" . $data_pixup['client_id'] . ", ativo=" . $data_pixup['ativo'] . "\n", FILE_APPEND);
 
         //===== INICIA SOLICITAÇÃO DE TOKEN =====//
 
@@ -213,11 +220,17 @@ function criarQrCode($valor, $nome, $id)
         curl_close($curl);
 
         if ($err) {
-            echo "cURL Error #:" . $err;
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " - ERRO cURL Token: $err\n", FILE_APPEND);
         }
 
         $responseData = json_decode($responseToken, true);
-        $token = $responseData['access_token'];
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " - PixUp Token Response: " . $responseToken . "\n", FILE_APPEND);
+        $token = $responseData['access_token'] ?? null;
+
+        if (!$token) {
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " - ERRO: Token PixUp vazio, retornando null\n", FILE_APPEND);
+            return null;
+        }
 
         //===== FINALIZA SOLICITAÇÃO DE TOKEN =====//
 
@@ -272,9 +285,10 @@ function criarQrCode($valor, $nome, $id)
         curl_close($curl);
 
         if ($err) {
-            echo "cURL Error #:" . $err;
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " - ERRO cURL QRCode PixUp: $err\n", FILE_APPEND);
         }
         $dados = json_decode($responseQ, true);
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " - PixUp QRCode Response: " . $responseQ . "\n", FILE_APPEND);
 
         //===== FINALIZA SOLICITAÇÃO DE QRCODE =====//
 
