@@ -3,8 +3,8 @@ FROM php:8.2-apache
 # Instalar extensões PHP necessárias
 RUN docker-php-ext-install mysqli pdo pdo_mysql
 
-# Habilitar mod_rewrite do Apache
-RUN a2enmod rewrite headers
+# Habilitar módulos do Apache (rewrite, headers, compressão, cache)
+RUN a2enmod rewrite headers deflate expires
 
 # Configurar o Apache para permitir .htaccess
 RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
