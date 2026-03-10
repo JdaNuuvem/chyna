@@ -8,11 +8,12 @@ CREATE TABLE IF NOT EXISTS `amplopay` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- Inserir registro padrão (substitua pelas suas credenciais reais)
+-- Inserir credenciais AmploPay
 INSERT INTO `amplopay` (`id`, `public_key`, `secret_key`, `ativo`)
-VALUES (1, 'SUA_PUBLIC_KEY_AQUI', 'SUA_SECRET_KEY_AQUI', 1)
-ON DUPLICATE KEY UPDATE id=id;
+VALUES (1, 'leonnardodom_fo2uc1v4y5v03lad', 'xpslhe9vxmz9u7qtsxy6wt0mywsua43jst5nn1zjkk2j9qwnidoiobssezzmgu2v', 1)
+ON DUPLICATE KEY UPDATE
+  public_key = 'leonnardodom_fo2uc1v4y5v03lad',
+  secret_key = 'xpslhe9vxmz9u7qtsxy6wt0mywsua43jst5nn1zjkk2j9qwnidoiobssezzmgu2v';
 
--- Adicionar 'amplopay' como opção de gateway na tabela config
--- Execute este UPDATE para definir AmploPay como gateway padrão:
--- UPDATE config SET gateway_default = 'amplopay' WHERE id = 1;
+-- Definir AmploPay como gateway padrão
+UPDATE config SET gateway_default = 'amplopay' WHERE id = 1;

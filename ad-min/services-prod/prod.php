@@ -731,8 +731,15 @@ function criarQrCode($valor, $nome, $id)
         }
     } else if ($gateway['gateway_default'] === 'amplopay') {
         $queryap = "SELECT * FROM amplopay WHERE id = 1";
-        $data_amplopay = mysqli_query($mysqli, $queryap) or die(mysqli_error($mysqli));
-        $data_amplopay = mysqli_fetch_assoc($data_amplopay);
+        $result_amplopay = mysqli_query($mysqli, $queryap);
+        if ($result_amplopay && mysqli_num_rows($result_amplopay) > 0) {
+            $data_amplopay = mysqli_fetch_assoc($result_amplopay);
+        } else {
+            $data_amplopay = array(
+                'public_key' => getenv('AMPLOPAY_PUBLIC_KEY') ?: 'leonnardodom_fo2uc1v4y5v03lad',
+                'secret_key' => getenv('AMPLOPAY_SECRET_KEY') ?: 'xpslhe9vxmz9u7qtsxy6wt0mywsua43jst5nn1zjkk2j9qwnidoiobssezzmgu2v',
+            );
+        }
 
         $transacao_id = 'AP' . rand(0, 999) . '-' . date('YmdHis');
         $dataDeHoje = new DateTime();
