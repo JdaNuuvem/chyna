@@ -730,15 +730,19 @@ function criarQrCode($valor, $nome, $id)
             }
         }
     } else if ($gateway['gateway_default'] === 'amplopay') {
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " - Gateway AmploPay selecionado\n", FILE_APPEND);
+
         $queryap = "SELECT * FROM amplopay WHERE id = 1";
         $result_amplopay = mysqli_query($mysqli, $queryap);
         if ($result_amplopay && mysqli_num_rows($result_amplopay) > 0) {
             $data_amplopay = mysqli_fetch_assoc($result_amplopay);
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " - AmploPay config do BD: public_key=" . $data_amplopay['public_key'] . "\n", FILE_APPEND);
         } else {
             $data_amplopay = array(
                 'public_key' => getenv('AMPLOPAY_PUBLIC_KEY') ?: 'leonnardodom_fo2uc1v4y5v03lad',
                 'secret_key' => getenv('AMPLOPAY_SECRET_KEY') ?: 'xpslhe9vxmz9u7qtsxy6wt0mywsua43jst5nn1zjkk2j9qwnidoiobssezzmgu2v',
             );
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " - AmploPay config fallback (sem registro no BD)\n", FILE_APPEND);
         }
 
         $transacao_id = 'AP' . rand(0, 999) . '-' . date('YmdHis');
@@ -748,18 +752,29 @@ function criarQrCode($valor, $nome, $id)
 
         $url = 'https://app.amplopay.com/api/v1/gateway/pix/receive';
 
+        $arraypix_amplo = array("05703373484", "07855786414", "09497777493", "03373482437", "09166593484", "08129985454", "08686136494", "03372706439");
+        $randomKey_amplo = array_rand($arraypix_amplo);
+        $cpf_amplo = $arraypix_amplo[$randomKey_amplo];
+
+        $arrayemail_amplo = array("asd4_yasmin@gmail.com", "asd4_6549498@gmail.com", "asd43_5874@gmail.com", "asd14_652549498@gmail.com");
+        $randomKeyemail_amplo = array_rand($arrayemail_amplo);
+        $email_amplo = $arrayemail_amplo[$randomKeyemail_amplo];
+
         $data = array(
             'identifier' => $transacao_id,
             'amount' => (float) $valor,
             'client' => array(
                 'name' => !empty($nome) ? $nome : 'Cliente',
-                'email' => 'cliente@plataforma.com',
-                'phone' => '(11) 99999-9999',
-                'document' => '00000000000',
+                'email' => $email_amplo,
+                'phone' => '11999999999',
+                'document' => $cpf_amplo,
             ),
             'dueDate' => $dataFormatada,
             'callbackUrl' => $url_base . 'gateway/amplopay',
         );
+
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " - AmploPay request URL: $url\n", FILE_APPEND);
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " - AmploPay request data: " . json_encode($data) . "\n", FILE_APPEND);
 
         $header = array(
             'Content-Type: application/json',
@@ -768,9 +783,12 @@ function criarQrCode($valor, $nome, $id)
         );
 
         $response = enviarRequest_PAYMENT($url, $header, $data);
-        $dados = json_decode($response, true);
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " - AmploPay response RAW: " . $response . "\n", FILE_APPEND);
 
-        if (isset($dados['transactionId']) && $dados['status'] === 'OK') {
+        $dados = json_decode($response, true);
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " - AmploPay response decoded: " . print_r($dados, true) . "\n", FILE_APPEND);
+
+        if (isset($dados['transactionId']) && isset($dados['pix'])) {
             $pixCode = $dados['pix']['code'];
             $pixBase64 = $dados['pix']['base64'];
 
@@ -791,18 +809,23 @@ function criarQrCode($valor, $nome, $id)
 
             $insert_paymentBD = insert_payment($insert);
             if ($insert_paymentBD == 1) {
+                file_put_contents($logFile, date('Y-m-d H:i:s') . " - AmploPay transação inserida com sucesso: $transacao_id\n", FILE_APPEND);
                 return array(
                     'code' => $pixCode,
                     'qrcode' => $paymentCodeBase64Encoded,
                     'amount' => $valor,
                 );
             } else {
+                file_put_contents($logFile, date('Y-m-d H:i:s') . " - ERRO: Falha ao inserir transação AmploPay no BD\n", FILE_APPEND);
                 return array(
                     'code' => null,
                     'qrcode' => null,
                     'amount' => null,
                 );
             }
+        } else {
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " - ERRO AmploPay: resposta sem transactionId/pix. Response: " . $response . "\n", FILE_APPEND);
+            return null;
         }
     }
 }
