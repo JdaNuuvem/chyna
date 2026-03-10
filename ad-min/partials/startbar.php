@@ -314,7 +314,7 @@
                         <a class="nav-link" href="#gateway" data-bs-toggle="collapse" role="button"
                             aria-expanded="false" aria-controls="gateway">
                             <i class="iconoir-fingerprint-lock-circle menu-icon"></i>
-                            <span>Gateway</span><span class="badge rounded text-success bg-success-subtle ms-1">5</span>
+                            <span>Gateway</span><span class="badge rounded text-success bg-success-subtle ms-1">6</span>
                         </a>
                         <div class="collapse " id="gateway">
                             <ul class="nav flex-column">
@@ -332,6 +332,9 @@
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="paguepix">Chaves PaguePix</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="amplopay">Chaves AmploPay</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="gateway-config">Credenciais Gateway</a>

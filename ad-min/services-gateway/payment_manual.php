@@ -75,6 +75,7 @@ $gatewayQueries = [
     'pixup' => "SELECT url, client_id, client_secret FROM pixup WHERE id = 1",
     'digitopay' => "SELECT url, client_id, client_secret FROM digitopay WHERE id = 1",
     'paguepix' => "SELECT url, client_id, client_secret FROM paguepix WHERE id = 1",
+    'amplopay' => "SELECT public_key, secret_key FROM amplopay WHERE id = 1",
 ];
 
 $stmt = executePreparedQuery($mysqli, $gatewayQueries[$gateway_default]);
@@ -250,6 +251,59 @@ if ($gateway_default === 'suitpay') {
 
         echo json_encode(["success" => true, "message" => "Saque aprovado com sucesso."]);
 
+        exit;
+    }
+} else if ($gateway_default === 'amplopay') {
+    $stmt->bind_result($public_key, $secret_key);
+    $stmt->fetch();
+    $stmt->close();
+
+    if (!$public_key || !$secret_key) {
+        echo json_encode(["success" => false, "message" => "Credenciais AmploPay não encontradas."]);
+        exit;
+    }
+
+    // Busca informações do PIX
+    $stmt = executePreparedQuery($mysqli, "SELECT realname, pix_id, flag FROM metodos_pagamentos WHERE id = ?", 'i', [$chavepix]);
+    $stmt->bind_result($pix_realname, $pix_account, $pix_flag);
+    $stmt->fetch();
+    $stmt->close();
+
+    $pixTypeMap = [1 => 'email', 2 => 'phone', 3 => 'cpf', 4 => 'cnpj'];
+    $pixType = isset($pixTypeMap[$pix_flag]) ? $pixTypeMap[$pix_flag] : 'cpf';
+
+    // Remover caracteres especiais do nome
+    $ownerName = preg_replace('/[^a-zA-Z ]/', '', $pix_realname ?: 'Jogador');
+
+    $responsejson = executeCurl('https://app.amplopay.com/api/v1/gateway/transfers', [
+        'identifier' => $id,
+        'amount' => (float) $valor,
+        'pix' => [
+            'type' => $pixType,
+            'key' => $pix_account,
+        ],
+        'owner' => [
+            'ip' => $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1',
+            'name' => substr($ownerName, 0, 100),
+            'document' => [
+                'type' => $pix_flag == 4 ? 'cnpj' : 'cpf',
+                'number' => preg_replace('/[^0-9]/', '', $pix_account),
+            ],
+        ],
+        'callbackUrl' => url_sistema() . '/gateway/amplopay',
+    ], [
+        'x-public-key: ' . $public_key,
+        'x-secret-key: ' . $secret_key,
+    ]);
+
+    if (isset($responsejson['withdraw']) && in_array($responsejson['withdraw']['status'], ['PENDING', 'COMPLETED', 'PROCESSING', 'TRANSFERRING'])) {
+        $date = (new DateTime())->format('Y-m-d H:i:s');
+        executePreparedQuery($mysqli, "UPDATE solicitacao_saques SET status = 1, data_att = ? WHERE transacao_id = ?", 'ss', [$date, $id]);
+        echo json_encode(["success" => true, "message" => "Saque aprovado com sucesso via AmploPay."]);
+        exit;
+    } else {
+        $errorMsg = isset($responsejson['message']) ? $responsejson['message'] : 'Erro desconhecido';
+        echo json_encode(["success" => false, "message" => "Erro AmploPay: " . $errorMsg]);
         exit;
     }
 } else if ($gateway_default === 'digitopay') {

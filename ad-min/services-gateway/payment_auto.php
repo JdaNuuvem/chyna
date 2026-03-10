@@ -77,91 +77,141 @@ $qry = "SELECT * FROM config WHERE id=1";
 $res = $mysqli->query($qry);
 $data = $res->fetch_assoc();
 
-// Obtendo as credenciais Suitpay
-$sql = "SELECT client_id, client_secret FROM suitpay WHERE id = 1";
-$result = $mysqli->query($sql);
+// Dados do saque
+$chavepix1 = $_POST['chavepix'] ?? '';
+$chavepix = localizarchavepix($chavepix1);
+$valor = floatval($_POST['valor'] ?? 0);
+$id = $_POST['id'] ?? '';
 
-if ($result->num_rows > 0) {
-    $row = $result->fetch_assoc();
-    $ci = $row['client_id'];
-    $cs = $row['client_secret'];
+if (!$chavepix || $valor <= 0 || $valor > $data['saque_automatico']) {
+    die("Chave Pix inválida, valor inválido ou valor fora do limite permitido.");
+}
 
-    $chavepix1 = $_POST['chavepix'] ?? '';
-    // Remover pontos e traços da chave pix
-    // $chavepix = str_replace(['.', '-'], '', $chavepix1);
-    $chavepix = localizarchavepix($chavepix1);
-    $valor = floatval($_POST['valor'] ?? 0);  // Convertendo o valor para float
-    $id = $_POST['id'] ?? '';
-    $token = loginDigitoPay();
+$valor = number_format($valor, 2, '.', '');
 
-    if ($chavepix && $valor > 0 && $valor <= $data['saque_automatico']) {
-        $valor = number_format($valor, 2, '.', '');
-        $filename = 'used_ids.json';
-        $used_ids = [];
+// Anti-fraude: verificar ID duplicado
+$filename = 'used_ids.json';
+$used_ids = [];
+if (file_exists($filename)) {
+    $file_content = file_get_contents($filename);
+    if ($file_content) {
+        $used_ids = json_decode($file_content, true);
+    }
+}
+if (in_array($id, $used_ids)) {
+    die("Anti-fraude acionado: Este ID já foi usado.");
+}
+if (!empty($id)) {
+    $used_ids[] = $id;
+    file_put_contents($filename, json_encode($used_ids, JSON_PRETTY_PRINT));
+} else {
+    die("ID inválido.");
+}
 
-        // Verificando e lendo o arquivo JSON
-        if (file_exists($filename)) {
-            $file_content = file_get_contents($filename);
-            if ($file_content) {
-                $used_ids = json_decode($file_content, true);
-            }
-        }
+$tipoChavePix = identificarTipoChavePix($chavepix);
+$gateway_default = $data['gateway_default'] ?? 'digitopay';
 
-        // Verificando se o ID já foi usado
-        if (in_array($id, $used_ids)) {
-            die("Anti-fraude acionado: Este ID já foi usado.");
-        }
+if ($gateway_default === 'amplopay') {
+    // AmploPay Transfer
+    $sql_ap = "SELECT public_key, secret_key FROM amplopay WHERE id = 1";
+    $result_ap = $mysqli->query($sql_ap);
+    if (!$result_ap || $result_ap->num_rows === 0) {
+        die("Credenciais AmploPay não encontradas.");
+    }
+    $row_ap = $result_ap->fetch_assoc();
 
-        // Adicionando o novo ID e atualizando o arquivo
-        if (!empty($id)) {
-            $used_ids[] = $id;
-            file_put_contents($filename, json_encode($used_ids, JSON_PRETTY_PRINT));
-        } else {
-            die("ID inválido.");
-        }
+    $pixTypeMap = ['phoneNumber' => 'phone', 'document' => 'cpf', 'email' => 'email', 'randomKey' => 'random'];
+    $pixType = isset($pixTypeMap[$tipoChavePix]) ? $pixTypeMap[$tipoChavePix] : 'cpf';
 
-        // Identificar o tipo da chave PIX automaticamente
-        $tipoChavePix = identificarTipoChavePix($chavepix);
+    $ownerName = preg_replace('/[^a-zA-Z ]/', '', 'Jogador');
 
-        $curl = curl_init();
-        curl_setopt_array($curl, array(
-        CURLOPT_URL => 'https://api.digitopayoficial.com.br/api/withdraw',
+    $payload = json_encode([
+        'identifier' => $id,
+        'amount' => (float) $valor,
+        'pix' => [
+            'type' => $pixType,
+            'key' => $chavepix,
+        ],
+        'owner' => [
+            'ip' => $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1',
+            'name' => $ownerName,
+            'document' => [
+                'type' => 'cpf',
+                'number' => preg_replace('/[^0-9]/', '', $chavepix),
+            ],
+        ],
+        'callbackUrl' => $url_base . 'gateway/amplopay',
+    ]);
+
+    $curl = curl_init();
+    curl_setopt_array($curl, [
+        CURLOPT_URL => 'https://app.amplopay.com/api/v1/gateway/transfers',
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => '',
-        CURLOPT_MAXREDIRS => 10,
         CURLOPT_TIMEOUT => 30,
         CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode([
-            'paymentOptions' => array("PIX"),
-            'person' => array(
-                'name' => $nomealeatorio,
-                'pixKeyTypes' => $tipoChavePix,
-                "pixKey" => $chavepix
-            ),
-            'value' => $valor // O valor formatado
-        ]),
-        CURLOPT_HTTPHEADER => array(
-            'Authorization: Bearer ' . $token,
-            'Content-Type: application/json'
-        ),
-         ));
+        CURLOPT_POSTFIELDS => $payload,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+            'x-public-key: ' . $row_ap['public_key'],
+            'x-secret-key: ' . $row_ap['secret_key'],
+        ],
+    ]);
+
+    $enviarpagamento = curl_exec($curl);
+    curl_close($curl);
+
+    $resp = json_decode($enviarpagamento, true);
+    if (isset($resp['withdraw']) && in_array($resp['withdraw']['status'], ['PENDING', 'COMPLETED', 'PROCESSING', 'TRANSFERRING'])) {
+        die("Pagamento realizado com sucesso");
+    } else {
+        $errorMsg = isset($resp['message']) ? $resp['message'] : $enviarpagamento;
+        die("Erro ao processar o pagamento: $errorMsg");
+    }
+} else {
+    // DigitoPay (gateway padrão legado)
+    $sql = "SELECT client_id, client_secret FROM suitpay WHERE id = 1";
+    $result = $mysqli->query($sql);
+
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        $ci = $row['client_id'];
+        $cs = $row['client_secret'];
+        $token = loginDigitoPay();
+
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => 'https://api.digitopayoficial.com.br/api/withdraw',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode([
+                'paymentOptions' => ["PIX"],
+                'person' => [
+                    'name' => 'Jogador',
+                    'pixKeyTypes' => $tipoChavePix,
+                    'pixKey' => $chavepix,
+                ],
+                'value' => $valor,
+            ]),
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $token,
+                'Content-Type: application/json',
+            ],
+        ]);
 
         $enviarpagamento = curl_exec($curl);
         curl_close($curl);
 
-        // Verificando a resposta do pagamento
         if (strpos($enviarpagamento, '"success": true') !== false) {
             die("Pagamento realizado com sucesso");
         } else {
             die("Erro ao processar o pagamento: $enviarpagamento");
         }
     } else {
-        echo "Chave Pix inválida, valor inválido ou valor fora do limite permitido." . $chavepix . $valor . $tipoChavePix;
-        exit;
+        die("Credenciais não encontradas no banco de dados.");
     }
-} else {
-    echo "Credenciais Suitpay não encontradas no banco de dados.";
-    exit;
 }
 $mysqli->close();
 ?>

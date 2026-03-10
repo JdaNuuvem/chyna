@@ -19,6 +19,8 @@ if ($config['gateway_default'] === 'suitpay') {
   $img = "https://app.digitopayoficial.com.br/assets/images/brand/icon-login.svg";
 } else if ($config['gateway_default'] === 'paguepix') {
   $img = "https://paguepix.com/assets/imagens/log.png";
+} else if ($config['gateway_default'] === 'amplopay') {
+  $img = "https://app.amplopay.com/logo.svg";
 }
 
 $paymentCode = $_GET['paymentCode'];

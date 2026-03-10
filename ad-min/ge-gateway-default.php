@@ -133,6 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                     <option value="royalbenk" <?= $config['gateway_default'] == 'royalbenk' ? 'selected' : '' ?>>Royalbenk</option>
                                                     <option value="suitpay" <?= $config['gateway_default'] == 'suitpay' ? 'selected' : '' ?>>Suitpay</option>
                                                     <option value="PaguePix" <?= $config['gateway_default'] == 'PaguePix' ? 'selected' : '' ?>>PaguePix</option>
+                                                    <option value="amplopay" <?= $config['gateway_default'] == 'amplopay' ? 'selected' : '' ?>>AmploPay</option>
                                                 </select>
                                             </div>
                                         </div>
