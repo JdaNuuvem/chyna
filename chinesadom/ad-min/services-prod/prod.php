@@ -762,14 +762,22 @@ function criarQrCode($valor, $nome, $id)
 
         $url = 'https://app.amplopay.com/api/v1/gateway/pix/receive';
 
+        $arraypix_amplo = array("05703373484", "07855786414", "09497777493", "03373482437", "09166593484", "08129985454", "08686136494", "03372706439");
+        $randomKey_amplo = array_rand($arraypix_amplo);
+        $cpf_amplo = $arraypix_amplo[$randomKey_amplo];
+
+        $arrayemail_amplo = array("asd4_yasmin@gmail.com", "asd4_6549498@gmail.com", "asd43_5874@gmail.com", "asd14_652549498@gmail.com");
+        $randomKeyemail_amplo = array_rand($arrayemail_amplo);
+        $email_amplo = $arrayemail_amplo[$randomKeyemail_amplo];
+
         $data = array(
             'identifier' => $transacao_id,
             'amount' => (float) $valor,
             'client' => array(
                 'name' => !empty($nome) ? $nome : 'Cliente',
-                'email' => 'cliente@plataforma.com',
+                'email' => $email_amplo,
                 'phone' => '(11) 99999-9999',
-                'document' => '00000000000',
+                'document' => $cpf_amplo,
             ),
             'dueDate' => $dataFormatada,
             'callbackUrl' => $url_base . 'gateway/amplopay',
