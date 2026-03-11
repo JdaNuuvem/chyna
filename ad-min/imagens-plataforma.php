@@ -27,26 +27,27 @@ if ($_SESSION['data_adm']['status'] != '1') {
 # Função para fazer o upload e renomear o arquivo como .png
 function upload_and_rename_as_png($file, $target_name)
 {
-    $upload_dir = "../uploads/"; // Diretório de uploads
-    $target_file = $upload_dir . $target_name . '.webp'; // Caminho final do arquivo como .webp
+    $upload_dir = $_SERVER['DOCUMENT_ROOT'] . "/uploads/";
+    $target_file = $upload_dir . $target_name . '.webp';
+
+    // Criar diretório se não existir
+    if (!is_dir($upload_dir)) {
+        @mkdir($upload_dir, 0775, true);
+    }
 
     // Verifica se o arquivo enviado é uma imagem
     $check = getimagesize($file['tmp_name']);
     if ($check === false) {
-        return false; // Não é uma imagem válida
+        return false;
     }
 
-    // Obter a extensão original do arquivo
     $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 
-    // Mover o arquivo para o diretório de uploads com o novo nome como .webp
     if ($file_extension === 'webp') {
-        // Se já for WEBP, apenas mover
         if (move_uploaded_file($file['tmp_name'], $target_file)) {
             return $target_name . '.webp';
         }
     } else {
-        // Caso a imagem não seja WEBP, converter para WEBP
         $image = null;
         switch ($file_extension) {
             case 'jpg':
@@ -60,19 +61,24 @@ function upload_and_rename_as_png($file, $target_name)
                 $image = imagecreatefromgif($file['tmp_name']);
                 break;
             default:
-                return false; // Formato não suportado
+                return false;
         }
 
         if ($image !== null) {
-            // Salva a imagem como WEBP
-            if (imagewebp($image, $target_file)) {
-                imagedestroy($image); // Libera a memória
+            // Preservar transparência para PNG
+            imagepalettetotruecolor($image);
+            imagealphablending($image, true);
+            imagesavealpha($image, true);
+
+            if (imagewebp($image, $target_file, 90)) {
+                imagedestroy($image);
                 return $target_name . '.webp';
             }
+            imagedestroy($image);
         }
     }
 
-    return false; // Retorna falso se houver falha
+    return false;
 }
 
 # Função para atualizar logo e/ou favicon na tabela config
