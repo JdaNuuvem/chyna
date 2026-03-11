@@ -24,24 +24,14 @@ if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
 }
 
 #====================================================================#
-# Webhook para monitoramento
-$dev_hook = 'https://webhook.site/c6640d43-fc1d-4565-bbc3-e3dee5a9d603';
-//===================================================================#
-function url_send()
-{
-    global $data, $dev_hook;
-    $url = $dev_hook;
-    $ch = curl_init($url);
-    $corpo = json_encode($data);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $corpo);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    $resultado = curl_exec($ch);
-    curl_close($ch);
-    return $resultado;
-}
-url_send();
+# Log completo do webhook para debug
+$debugLogFile = $_SERVER['DOCUMENT_ROOT'] . '/logs/webhook_debug_' . date('Y-m-d') . '.log';
+$debugEntry = str_repeat('=', 60) . "\n";
+$debugEntry .= date('Y-m-d H:i:s') . " - AmploPay Callback\n";
+$debugEntry .= "Headers: " . json_encode(getallheaders(), JSON_PRETTY_PRINT) . "\n";
+$debugEntry .= "Body: " . $rawInput . "\n";
+$debugEntry .= str_repeat('=', 60) . "\n\n";
+file_put_contents($debugLogFile, $debugEntry, FILE_APPEND);
 
 #====================================================================#
 # Extrair campos do webhook AmploPay
@@ -49,13 +39,25 @@ $event = isset($data['event']) ? $data['event'] : null;
 $transaction = isset($data['transaction']) ? $data['transaction'] : null;
 
 if ($transaction) {
-    $idTransaction = isset($transaction['identifier']) ? PHP_SEGURO($transaction['identifier']) : null;
+    # AmploPay pode enviar o identifier em diferentes campos
+    $idTransaction = null;
+    if (isset($transaction['identifier'])) {
+        $idTransaction = PHP_SEGURO($transaction['identifier']);
+    } elseif (isset($transaction['id'])) {
+        # Tentar buscar pelo ID interno da AmploPay na tabela transacoes
+        $idTransaction = PHP_SEGURO($transaction['id']);
+    }
     $statusTransaction = isset($transaction['status']) ? $transaction['status'] : null;
     $paymentMethod = isset($transaction['paymentMethod']) ? $transaction['paymentMethod'] : null;
+
+    file_put_contents($logFile, date('Y-m-d H:i:s') . " - Transaction fields: " . json_encode(array_keys($transaction)) . "\n", FILE_APPEND);
+    file_put_contents($logFile, date('Y-m-d H:i:s') . " - Transaction data: " . json_encode($transaction) . "\n", FILE_APPEND);
 } else {
     $idTransaction = null;
     $statusTransaction = null;
     $paymentMethod = null;
+    file_put_contents($logFile, date('Y-m-d H:i:s') . " - AVISO: campo 'transaction' não encontrado no payload\n", FILE_APPEND);
+    file_put_contents($logFile, date('Y-m-d H:i:s') . " - Campos disponíveis: " . json_encode(array_keys($data ?? [])) . "\n", FILE_APPEND);
 }
 
 #====================================================================#
@@ -113,14 +115,35 @@ function att_paymentpix($transacao_id)
 
 #====================================================================#
 # Processar eventos AmploPay
-# Status COMPLETED = pago | evento TRANSACTION_PAID
 file_put_contents($logFile, date('Y-m-d H:i:s') . " - Event: $event | Status: $statusTransaction | ID: $idTransaction\n", FILE_APPEND);
 
-if ($event === 'TRANSACTION_PAID' && $idTransaction && $statusTransaction === 'COMPLETED') {
+# Aceitar evento TRANSACTION_PAID com status COMPLETED ou PAID
+$isPaid = ($event === 'TRANSACTION_PAID') && $idTransaction &&
+          in_array($statusTransaction, ['COMPLETED', 'PAID', 'completed', 'paid'], true);
+
+if ($isPaid) {
     $att_transacao = att_paymentpix($idTransaction);
     file_put_contents($logFile, date('Y-m-d H:i:s') . " - Pagamento processado: transacao=$idTransaction resultado=$att_transacao\n", FILE_APPEND);
+
+    if ($att_transacao == 0) {
+        # Se não encontrou pelo identifier, tentar buscar pelo transactionId da AmploPay
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " - AVISO: att_paymentpix retornou 0 para ID=$idTransaction, verificando alternativas...\n", FILE_APPEND);
+
+        # Tentar o outro campo (se usamos 'id', tentar 'identifier' e vice-versa)
+        $altId = null;
+        if (isset($transaction['identifier']) && $idTransaction !== PHP_SEGURO($transaction['identifier'])) {
+            $altId = PHP_SEGURO($transaction['identifier']);
+        } elseif (isset($transaction['id']) && $idTransaction !== PHP_SEGURO($transaction['id'])) {
+            $altId = PHP_SEGURO($transaction['id']);
+        }
+
+        if ($altId) {
+            $att_transacao2 = att_paymentpix($altId);
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " - Tentativa alternativa com ID=$altId resultado=$att_transacao2\n", FILE_APPEND);
+        }
+    }
 } else {
-    file_put_contents($logFile, date('Y-m-d H:i:s') . " - Evento ignorado (não é TRANSACTION_PAID/COMPLETED)\n", FILE_APPEND);
+    file_put_contents($logFile, date('Y-m-d H:i:s') . " - Evento ignorado: event=$event status=$statusTransaction id=$idTransaction\n", FILE_APPEND);
 }
 
 # Responder 200 para confirmar recebimento
