@@ -10,6 +10,7 @@ RewriteRule  ^bspay 				bspay.php		 	     [NC,L]
 RewriteRule  ^royalbenk 			royalbenk.php		     [NC,L]
 RewriteRule  ^webhook 				webhook.php		 	     [NC,L]
 RewriteRule  ^digitopay 				digitopay.php		 	     [NC,L]
+RewriteRule  ^amplopay 				amplopay.php		 	     [NC,L]
 
 
 RewriteCond %{REQUEST_FILENAME} !-f
