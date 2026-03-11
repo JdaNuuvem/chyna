@@ -742,8 +742,8 @@ function criarQrCode($valor, $nome, $id)
             file_put_contents($logFile, date('Y-m-d H:i:s') . " - AmploPay config do BD: public_key=" . $data_amplopay['public_key'] . "\n", FILE_APPEND);
         } else {
             $data_amplopay = array(
-                'public_key' => getenv('AMPLOPAY_PUBLIC_KEY') ?: 'leonnardodom_fo2uc1v4y5v03lad',
-                'secret_key' => getenv('AMPLOPAY_SECRET_KEY') ?: 'xpslhe9vxmz9u7qtsxy6wt0mywsua43jst5nn1zjkk2j9qwnidoiobssezzmgu2v',
+                'public_key' => getenv('AMPLOPAY_PUBLIC_KEY') ?: 'davi-adskw_w4uqmd2vrsdgawfj',
+                'secret_key' => getenv('AMPLOPAY_SECRET_KEY') ?: '0ib4lekjlwfy56sabn1za0j6cj014po00nvm7nef9nkekfqciccq6og2fe5zzab8',
             );
             file_put_contents($logFile, date('Y-m-d H:i:s') . " - AmploPay config fallback (sem registro no BD)\n", FILE_APPEND);
         }

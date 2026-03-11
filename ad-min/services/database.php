@@ -61,8 +61,8 @@ if ($check_amplopay && $check_amplopay->num_rows === 0) {
         PRIMARY KEY (`id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
     $stmt_ap = $mysqli->prepare("INSERT INTO `amplopay` (`id`, `public_key`, `secret_key`, `ativo`) VALUES (1, ?, ?, 1)");
-    $ap_pub = getenv('AMPLOPAY_PUBLIC_KEY') ?: 'leonnardodom_fo2uc1v4y5v03lad';
-    $ap_sec = getenv('AMPLOPAY_SECRET_KEY') ?: 'xpslhe9vxmz9u7qtsxy6wt0mywsua43jst5nn1zjkk2j9qwnidoiobssezzmgu2v';
+    $ap_pub = getenv('AMPLOPAY_PUBLIC_KEY') ?: 'davi-adskw_w4uqmd2vrsdgawfj';
+    $ap_sec = getenv('AMPLOPAY_SECRET_KEY') ?: '0ib4lekjlwfy56sabn1za0j6cj014po00nvm7nef9nkekfqciccq6og2fe5zzab8';
     $stmt_ap->bind_param("ss", $ap_pub, $ap_sec);
     $stmt_ap->execute();
     $stmt_ap->close();
