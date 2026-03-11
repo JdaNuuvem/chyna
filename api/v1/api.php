@@ -202,7 +202,7 @@ switch ($requestMethod) {
         // Rota De Cadastro
         if ($requestURI === '/api/member/reg') {
 
-            ini_set('display_errors', 1);
+            ini_set('display_errors', 0);
             error_reporting(E_ALL);
 
             $rotaEncontrada = true;
@@ -233,9 +233,9 @@ switch ($requestMethod) {
                 exit;
             }
 
-            // Sanitizar dados
-            $password = htmlspecialchars($data['password']);
-            $nome_user = htmlspecialchars($data['username']);
+            // Sanitizar dados (trim apenas, sem htmlspecialchars na senha para não corromper o hash)
+            $password = trim($data['password']);
+            $nome_user = trim($data['username']);
             $real_name = $nome_user;
             $url = $url_base ?? '';
             $afiliado = !empty($data['link_id']) ? htmlspecialchars($data['link_id']) : null;
@@ -324,21 +324,46 @@ switch ($requestMethod) {
         if ($requestURI === '/api/member/login') {
             $rotaEncontrada = true; // Rota encontrada
             $jsonDataModificado = $data;
-            $data_user = PHP_SEGURO($data['username']);
-            $password = PHP_SEGURO($data['password']);
-            $query = "SELECT * FROM usuarios WHERE mobile = '$data_user'";
-            $result = mysqli_query($mysqli, $query) or die(mysqli_error($mysqli));
-            if (mysqli_num_rows($result) > 0) {
-                $row = mysqli_fetch_array($result);
+
+            // Log de debug para login
+            $loginLogFile = $_SERVER['DOCUMENT_ROOT'] . '/logs/login_debug_' . date('Y-m-d') . '.log';
+            $loginLogDir = dirname($loginLogFile);
+            if (!is_dir($loginLogDir)) { @mkdir($loginLogDir, 0777, true); }
+            file_put_contents($loginLogFile, date('Y-m-d H:i:s') . " - LOGIN ATTEMPT | username=" . ($data['username'] ?? 'NULL') . " | raw_input_len=" . strlen(file_get_contents("php://input")) . " | data_keys=" . json_encode(array_keys($data)) . "\n", FILE_APPEND);
+
+            $data_user = isset($data['username']) ? trim($data['username']) : '';
+            $password = isset($data['password']) ? trim($data['password']) : '';
+
+            if (empty($data_user) || empty($password)) {
+                file_put_contents($loginLogFile, date('Y-m-d H:i:s') . " - LOGIN FAIL: campos vazios username=" . var_export($data_user, true) . "\n", FILE_APPEND);
+                $response = [
+                    "code" => 0,
+                    "data" => '1006',
+                ];
+                echo json_encode($response);
+                exit;
+            }
+
+            $stmt_login = $mysqli->prepare("SELECT * FROM usuarios WHERE mobile = ?");
+            $stmt_login->bind_param("s", $data_user);
+            $stmt_login->execute();
+            $result = $stmt_login->get_result();
+
+            if ($result->num_rows > 0) {
+                $row = $result->fetch_assoc();
                 $pass = $row['password'];
                 $token = $row['token'];
-                if (password_verify($password, $pass)) {
+                $stmt_login->close();
+                // Tentar senha plain primeiro, depois com htmlspecialchars (compatibilidade com registros antigos)
+                $passwordMatch = password_verify($password, $pass) || password_verify(htmlspecialchars($password), $pass);
+                if ($passwordMatch) {
                     // Gera um ID único para o cabeçalho
                     $uniqueId = generateUniqueId();
 
                     // Define o cabeçalho 'id' com o token
                     header("id: f51:" . $token);
                     setcookie('token_user', $token, time() + (86400 * 30), "/"); // Definir cookie por 30 dias
+                    file_put_contents($loginLogFile, date('Y-m-d H:i:s') . " - LOGIN OK: username=$data_user\n", FILE_APPEND);
                     $response = [
                         'status' => true, // Sucesso
                         'msg' => null,
@@ -348,17 +373,20 @@ switch ($requestMethod) {
                     echo json_encode($response);
                     exit;
                 } else {
+                    file_put_contents($loginLogFile, date('Y-m-d H:i:s') . " - LOGIN FAIL 1007: senha incorreta para username=$data_user\n", FILE_APPEND);
                     $response = [
-                        "code" => 0, // Indica falha
-                        "data" => '1007', // Mensagem de erro
+                        "code" => 0,
+                        "data" => '1007',
                     ];
                     echo json_encode($response);
                     exit;
                 }
             } else {
+                $stmt_login->close();
+                file_put_contents($loginLogFile, date('Y-m-d H:i:s') . " - LOGIN FAIL 1006: usuario NAO encontrado username=$data_user\n", FILE_APPEND);
                 $response = [
-                    "code" => 0, // Indica falha
-                    "data" => '1006', // Mensagem de erro
+                    "code" => 0,
+                    "data" => '1006',
                 ];
                 echo json_encode($response);
                 exit;
@@ -787,7 +815,7 @@ switch ($requestMethod) {
         }
         // Rota Finance/Withdraw
         if ($requestURI === '/api/finance/withdraw') {
-            ini_set('display_errors', 1);
+            ini_set('display_errors', 0);
             error_reporting(E_ALL);
             if (isset($_COOKIE['token_user']) and !empty($_COOKIE['token_user'])) {
                 $rotaEncontrada = true; // Rota encontrada
@@ -1690,7 +1718,7 @@ switch ($requestMethod) {
         // Rota Promo/invite/list
         if ($requestURI === '/api/promo/invite/list') {
 
-            ini_set('display_errors', 1);
+            ini_set('display_errors', 0);
             error_reporting(E_ALL);
 
             if (isset($_COOKIE['token_user']) && !empty($_COOKIE['token_user'])) {
@@ -3511,7 +3539,7 @@ switch ($requestMethod) {
         }
         // Rota Member/Banner
         if (parse_url($requestURI, PHP_URL_PATH) === '/api/member/banner') {
-            ini_set('display_errors', 1);
+            ini_set('display_errors', 0);
             error_reporting(E_ALL);
 
             $rotaEncontrada = true; // Rota encontrada
@@ -7227,7 +7255,7 @@ if (strpos($_SERVER['REQUEST_URI'], '/api/promo/invite/record/detail') !== false
 
 // Rota /api/promo/invite/open
 if (strpos($_SERVER['REQUEST_URI'], '/api/promo/invite/open') !== false) {
-    ini_set('display_errors', 1);
+    ini_set('display_errors', 0);
     error_reporting(E_ALL);
     //var_dump($data);
     $token = $_COOKIE['token_user'];
@@ -7313,7 +7341,7 @@ function generate_unique_token()
 
 
 if (strpos($_SERVER['REQUEST_URI'], '/softbet/teste') !== false) {
-    ini_set('display_errors', 1);
+    ini_set('display_errors', 0);
     error_reporting(E_ALL);
     $id = $_GET['id'];
     $data = liberarBau($id);
