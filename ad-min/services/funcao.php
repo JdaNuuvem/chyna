@@ -7,6 +7,15 @@ $pasta_url = '/';
 
 // Função para detectar se a conexão é HTTPS
 function pega_http_https() {
+    if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+        return 'https';
+    }
+    if (!empty($_SERVER['HTTP_CF_VISITOR'])) {
+        $visitor = json_decode($_SERVER['HTTP_CF_VISITOR']);
+        if (isset($visitor->scheme) && $visitor->scheme === 'https') {
+            return 'https';
+        }
+    }
     return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? 'https' : 'http';
 }
 
