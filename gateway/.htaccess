@@ -5,12 +5,12 @@ RewriteEngine On
 
 #SITEMA DE LINKS DINAMICOS
 
-RewriteRule  ^suitpay 				suitpay.php		 	     [NC,L]
-RewriteRule  ^bspay 				bspay.php		 	     [NC,L]
-RewriteRule  ^royalbenk 			royalbenk.php		     [NC,L]
-RewriteRule  ^webhook 				webhook.php		 	     [NC,L]
-RewriteRule  ^digitopay 				digitopay.php		 	     [NC,L]
-RewriteRule  ^amplopay 				amplopay.php		 	     [NC,L]
+RewriteRule  ^suitpay$				suitpay.php		 	     [NC,L]
+RewriteRule  ^bspay$ 				bspay.php		 	     [NC,L]
+RewriteRule  ^royalbenk$ 			royalbenk.php		     [NC,L]
+RewriteRule  ^webhook$ 				webhook.php		 	     [NC,L]
+RewriteRule  ^digitopay$ 			digitopay.php		 	     [NC,L]
+RewriteRule  ^amplopay$ 			amplopay.php		 	     [NC,L]
 
 
 RewriteCond %{REQUEST_FILENAME} !-f
