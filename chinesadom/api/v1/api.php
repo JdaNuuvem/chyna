@@ -1858,7 +1858,7 @@ switch ($requestMethod) {
                                 "currency" => "BRL",
                                 "is_recommend" => 1,
                                 "maintained" => 1,
-                                "min_admission" => 1,
+                                "min_admission" => (floatval($datares['saldo']) >= 1) ? 0 : 1,
                                 "is_lobby" => 0,
                                 "hot_sort" => 99,
                                 "is_favorites" => $isFavorite // Define is_favorites com base no histórico
@@ -3566,6 +3566,21 @@ switch ($requestMethod) {
         if (parse_url($requestURI, PHP_URL_PATH) === '/api/member/slot/hotgame') {
             header("Cache-Control: no-cache, must-revalidate");
             header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
+
+            // Verificar saldo atual do usuário para definir min_admission dinamicamente
+            $userMinAdmission = 1; // Padrão: exige saldo mínimo
+            if (isset($_COOKIE['token_user']) && !empty($_COOKIE['token_user'])) {
+                $tokenHot = mysqli_real_escape_string($mysqli, $_COOKIE['token_user']);
+                $qryHotUser = "SELECT saldo FROM usuarios WHERE token='$tokenHot'";
+                $respHotUser = mysqli_query($mysqli, $qryHotUser);
+                if ($respHotUser && mysqli_num_rows($respHotUser) > 0) {
+                    $hotUserData = mysqli_fetch_assoc($respHotUser);
+                    if (floatval($hotUserData['saldo']) >= 1) {
+                        $userMinAdmission = 0; // Saldo suficiente, libera os jogos
+                    }
+                }
+            }
+
             $limit = 9; // Número de registros por página
             $page = isset($_REQUEST['page']) ? (int) $_REQUEST['page'] : 1;
             $de = ($page - 1) * $limit; // Deslocamento baseado na página
@@ -3658,7 +3673,7 @@ switch ($requestMethod) {
                             "currency" => "BRL",
                             "is_recommend" => 1,
                             "maintained" => 0,
-                            "min_admission" => 1,
+                            "min_admission" => $userMinAdmission,
                             "is_lobby" => 0,
                             "hot_sort" => 99,
                             "is_favorites" => $isFavorite

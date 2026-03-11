@@ -773,7 +773,7 @@ function criarQrCode($valor, $nome, $id)
                 'document' => $cpf_amplo,
             ),
             'dueDate' => $dataFormatada,
-            'callbackUrl' => str_replace('http://', 'https://', $url_base) . 'gateway/amplopay',
+            'callbackUrl' => str_replace('http://', 'https://', $url_base) . 'gateway/amplopay.php',
         );
 
         file_put_contents($logFile, date('Y-m-d H:i:s') . " - AmploPay request URL: $url\n", FILE_APPEND);
