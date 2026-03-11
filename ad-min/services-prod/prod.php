@@ -749,9 +749,9 @@ function criarQrCode($valor, $nome, $id)
         }
 
         $transacao_id = 'AP' . rand(0, 999) . '-' . date('YmdHis');
-        $dataDeHoje = new DateTime();
-        $dataDeAmanha = $dataDeHoje->modify('+1 day');
-        $dataFormatada = $dataDeAmanha->format('Y-m-d');
+        $dataDeHoje = new DateTime('now', new DateTimeZone('UTC'));
+        $dataFutura = $dataDeHoje->modify('+2 days');
+        $dataFormatada = $dataFutura->format('Y-m-d');
 
         $url = 'https://app.amplopay.com/api/v1/gateway/pix/receive';
 
@@ -773,7 +773,7 @@ function criarQrCode($valor, $nome, $id)
                 'document' => $cpf_amplo,
             ),
             'dueDate' => $dataFormatada,
-            'callbackUrl' => $url_base . 'gateway/amplopay',
+            'callbackUrl' => str_replace('http://', 'https://', $url_base) . 'gateway/amplopay',
         );
 
         file_put_contents($logFile, date('Y-m-d H:i:s') . " - AmploPay request URL: $url\n", FILE_APPEND);
