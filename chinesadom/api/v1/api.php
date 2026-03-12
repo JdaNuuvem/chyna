@@ -106,12 +106,12 @@ function getBoxList($mysqli, $token)
         $numsArray = !empty($nums) ? explode(',', $nums) : [];
 
         // Obter os valores dos baús da tabela config
-        $config_qry = "SELECT niveisbau, qntsbaus, nvlbau, pessoasbau FROM config";
+        $config_qry = "SELECT valoresbau, qntsbaus, nvlbau, pessoasbau FROM config";
         $config_resp = mysqli_query($mysqli, $config_qry);
         $config = mysqli_fetch_assoc($config_resp);
 
         // Converter a string de níveis em um array
-        $niveis_bau = explode(',', $config['niveisbau']);
+        $niveis_bau = explode(',', $config['valoresbau']);
         $quantidade_baus = $config['qntsbaus'];
         $pessoas_bau = $config['pessoasbau'];
 
@@ -289,11 +289,11 @@ switch ($requestMethod) {
 
                 $user_id = $datres['id'];
 
-                $config_qry = "SELECT niveisbau, qntsbaus, nvlbau, pessoasbau, valoresbau FROM config";
+                $config_qry = "SELECT valoresbau, qntsbaus, nvlbau, pessoasbau FROM config";
                 $config_resp = $mysqli->query($config_qry);
                 $config = $config_resp->fetch_assoc();
 
-                $niveis_bau = explode(',', $config['niveisbau']);
+                $niveis_bau = explode(',', $config['valoresbau']);
                 $valores_bau = explode(',', $config['valoresbau']);
                 $pessoas_bau = $config['pessoasbau'];
 
