@@ -1771,6 +1771,13 @@ switch ($requestMethod) {
                     exit;
                 }
 
+                // Buscar valores atualizados do config
+                $qrycnf_valores = "SELECT valoresbau, pessoasbau FROM config WHERE id = 1";
+                $cnf_valores = mysqli_query($mysqli, $qrycnf_valores);
+                $config_valores = mysqli_fetch_assoc($cnf_valores);
+                $valores_config = explode(',', $config_valores['valoresbau']);
+                $pessoas_bau_config = (int) $config_valores['pessoasbau'];
+
                 $status = [
                     "gerado" => 1,
                     "disponivel" => 2,
@@ -1778,10 +1785,18 @@ switch ($requestMethod) {
                 ];
 
                 $baus = [];
-                foreach ($datafbau->fetch_all(MYSQLI_ASSOC) as $key => $bau) {
+                $total_baus = count($valores_config);
+                $baus_data = $datafbau->fetch_all(MYSQLI_ASSOC);
+                $baus_por_nivel = ceil(count($baus_data) / max($total_baus, 1));
+
+                foreach ($baus_data as $key => $bau) {
+                    // Usar valor do config baseado no nível do baú
+                    $nivel_index = floor($key / max($baus_por_nivel, 1));
+                    $valor_config = isset($valores_config[$nivel_index]) ? (float) $valores_config[$nivel_index] : (float) end($valores_config);
+
                     $baus[] = [
-                        "mem_count" => $key + 1,
-                        "bonus_amount" => $bau['valor'],
+                        "mem_count" => ($key + 1) * $pessoas_bau_config,
+                        "bonus_amount" => $valor_config,
                         "sort" => $key,
                         "state" => $status[$bau['status']] ?? null,
                     ];
