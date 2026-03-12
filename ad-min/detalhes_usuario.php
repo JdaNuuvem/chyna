@@ -49,10 +49,14 @@
         $invite = $_POST['invite'];
         $senha_saque = $_POST['senhaparasacar'];
 
-        $pass =  password_hash($password, PASSWORD_DEFAULT, array("cost" => 10));
-
-        // Atualizar no banco de dados
-        $update_query = "UPDATE usuarios SET mobile='$real_name', token='$token', password='$pass', statusaff='$statusaff', invite_code='$invite', senhaparasacar='$senha_saque', tipo_pagamento = '$tipo_pagamento' WHERE id='" . intval($id_user) . "'";
+        // Só atualiza a senha se o campo foi preenchido
+        if (!empty(trim($password))) {
+            $pass = password_hash(trim($password), PASSWORD_DEFAULT, array("cost" => 10));
+            $update_query = "UPDATE usuarios SET mobile='" . mysqli_real_escape_string($mysqli, $real_name) . "', token='" . mysqli_real_escape_string($mysqli, $token) . "', password='" . mysqli_real_escape_string($mysqli, $pass) . "', spassword='" . mysqli_real_escape_string($mysqli, $pass) . "', statusaff='" . mysqli_real_escape_string($mysqli, $statusaff) . "', invite_code='" . mysqli_real_escape_string($mysqli, $invite) . "', senhaparasacar='" . mysqli_real_escape_string($mysqli, $senha_saque) . "', tipo_pagamento = '" . mysqli_real_escape_string($mysqli, $tipo_pagamento) . "' WHERE id='" . intval($id_user) . "'";
+        } else {
+            // Não altera a senha quando o campo está vazio
+            $update_query = "UPDATE usuarios SET mobile='" . mysqli_real_escape_string($mysqli, $real_name) . "', token='" . mysqli_real_escape_string($mysqli, $token) . "', statusaff='" . mysqli_real_escape_string($mysqli, $statusaff) . "', invite_code='" . mysqli_real_escape_string($mysqli, $invite) . "', senhaparasacar='" . mysqli_real_escape_string($mysqli, $senha_saque) . "', tipo_pagamento = '" . mysqli_real_escape_string($mysqli, $tipo_pagamento) . "' WHERE id='" . intval($id_user) . "'";
+        }
         $update_res = mysqli_query($mysqli, $update_query);
 
         if ($update_res) {
@@ -302,8 +306,8 @@
                                     <div class="row mb-3">
                                         <div class="col-md-6">
                                             <label for="password" class="form-label">Senha</label>
-                                            <input type="password" class="form-control" name="password" id="password"
-                                                value="<?= $data['password']; ?>" required>
+                                            <input type="text" class="form-control" name="password" id="password"
+                                                placeholder="Deixe vazio para manter a senha atual">
                                         </div>
                                         <div class="col-md-6">
                                             <label for="invite" class="form-label">Código De Convite</label>

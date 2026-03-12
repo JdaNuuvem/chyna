@@ -354,8 +354,26 @@ switch ($requestMethod) {
                 $pass = $row['password'];
                 $token = $row['token'];
                 $stmt_login->close();
-                // Tentar senha plain primeiro, depois com htmlspecialchars (compatibilidade com registros antigos)
-                $passwordMatch = password_verify($password, $pass) || password_verify(htmlspecialchars($password), $pass);
+
+                // Verificar se o hash armazenado é válido (não é hash de string vazia)
+                $emptyHash = password_verify('', $pass);
+                if ($emptyHash) {
+                    file_put_contents($loginLogFile, date('Y-m-d H:i:s') . " - LOGIN FAIL: senha do usuario $data_user foi corrompida (hash de string vazia no banco). Necessario resetar senha.\n", FILE_APPEND);
+                    $response = [
+                        "code" => 0,
+                        "data" => '1007',
+                        "msg" => "Sua senha foi resetada por erro do sistema. Entre em contato com o suporte para redefinir sua senha.",
+                    ];
+                    echo json_encode($response);
+                    exit;
+                }
+
+                // Tentar senha plain primeiro, depois com htmlspecialchars em diferentes modos (compatibilidade com registros antigos)
+                $passwordMatch = password_verify($password, $pass)
+                    || password_verify(htmlspecialchars($password, ENT_QUOTES, 'UTF-8'), $pass)
+                    || password_verify(htmlspecialchars($password, ENT_COMPAT, 'UTF-8'), $pass)
+                    || password_verify(htmlspecialchars($password), $pass);
+
                 if ($passwordMatch) {
                     // Gera um ID único para o cabeçalho
                     $uniqueId = generateUniqueId();
@@ -373,7 +391,9 @@ switch ($requestMethod) {
                     echo json_encode($response);
                     exit;
                 } else {
-                    file_put_contents($loginLogFile, date('Y-m-d H:i:s') . " - LOGIN FAIL 1007: senha incorreta para username=$data_user\n", FILE_APPEND);
+                    $hashInfo = password_get_info($pass);
+                    $hashLen = strlen($pass);
+                    file_put_contents($loginLogFile, date('Y-m-d H:i:s') . " - LOGIN FAIL 1007: senha incorreta para username=$data_user | hash_algo={$hashInfo['algoName']} | hash_len=$hashLen | pass_len=" . strlen($password) . " | has_special=" . (preg_match('/[&<>"\']/', $password) ? 'yes' : 'no') . "\n", FILE_APPEND);
                     $response = [
                         "code" => 0,
                         "data" => '1007',
