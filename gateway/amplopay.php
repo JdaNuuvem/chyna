@@ -3,6 +3,7 @@ session_start();
 include_once('../ad-min/services/database.php');
 include_once('../ad-min/services/funcao.php');
 include_once('../ad-min/services/crud.php');
+include_once(__DIR__ . '/bonus_roleta.php');
 global $mysqli;
 
 // Log de callback
@@ -73,6 +74,8 @@ function busca_valor_ipn($transacao_id)
         $retornaUSER = get_user_by_id($data['usuario']);
         if ($retornaUSER) {
             $retorna_insert_saldo = enviarSaldo($retornaUSER['mobile'], $data['valor']);
+            creditar_bonus_roleta($data['usuario']);
+            creditar_comissao_afiliado($data['usuario'], $data['valor']);
             return $retorna_insert_saldo;
         }
     }
@@ -98,9 +101,9 @@ function get_user_by_id($user_id)
 function att_paymentpix($transacao_id)
 {
     global $mysqli;
-    $sql = $mysqli->prepare("UPDATE transacoes SET status='pago' WHERE transacao_id=?");
+    $sql = $mysqli->prepare("UPDATE transacoes SET status='pago' WHERE transacao_id=? AND status != 'pago'");
     $sql->bind_param("s", $transacao_id);
-    if ($sql->execute()) {
+    if ($sql->execute() && $sql->affected_rows > 0) {
         $buscar = busca_valor_ipn($transacao_id);
         if ($buscar) {
             $rf = 1;

@@ -1,0 +1,330 @@
+/* ============================================= */
+/* ROLETA DA SORTE - Lucky Wheel                  */
+/* ============================================= */
+
+#roleta-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.92);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+}
+
+#roleta-overlay.hide {
+    animation: fadeOut 0.5s forwards;
+}
+
+@keyframes fadeOut {
+    to { opacity: 0; pointer-events: none; }
+}
+
+.roleta-titulo {
+    color: #FFD700;
+    font-size: 24px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    letter-spacing: 2px;
+    text-align: center;
+}
+
+.roleta-subtitulo {
+    color: #fff;
+    font-size: 14px;
+    margin-bottom: 20px;
+    opacity: 0.8;
+    text-align: center;
+}
+
+.roleta-container {
+    position: relative;
+    width: 320px;
+    height: 320px;
+}
+
+@media (max-width: 380px) {
+    .roleta-container {
+        width: 280px;
+        height: 280px;
+    }
+}
+
+/* Seta indicadora */
+.roleta-seta {
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 16px solid transparent;
+    border-right: 16px solid transparent;
+    border-top: 30px solid #FFD700;
+    z-index: 10;
+    filter: drop-shadow(0 2px 6px rgba(255, 215, 0, 0.6));
+}
+
+/* Canvas da roleta */
+#roleta-canvas {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    box-shadow: 0 0 40px rgba(255, 215, 0, 0.3), 0 0 80px rgba(255, 215, 0, 0.1);
+}
+
+/* Botão girar */
+.roleta-btn-girar {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #FFD700, #FFA500);
+    border: 3px solid #fff;
+    color: #1a1a2e;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    z-index: 11;
+    letter-spacing: 1px;
+}
+
+.roleta-btn-girar:hover {
+    transform: translate(-50%, -50%) scale(1.08);
+    box-shadow: 0 6px 25px rgba(255, 215, 0, 0.6);
+}
+
+.roleta-btn-girar:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Luzes decorativas ao redor */
+.roleta-luzes {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    width: calc(100% + 16px);
+    height: calc(100% + 16px);
+    border-radius: 50%;
+    border: 4px dotted rgba(255, 215, 0, 0.4);
+    animation: rotateLuzes 8s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes rotateLuzes {
+    to { transform: rotate(360deg); }
+}
+
+/* ============================================= */
+/* POPUP RESULTADO                                */
+/* ============================================= */
+
+#roleta-resultado {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 100000;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#roleta-resultado.show {
+    display: flex;
+}
+
+.resultado-card {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 2px solid #FFD700;
+    border-radius: 20px;
+    padding: 30px 25px;
+    text-align: center;
+    max-width: 340px;
+    width: 90%;
+    box-shadow: 0 0 60px rgba(255, 215, 0, 0.2);
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.resultado-icone {
+    font-size: 50px;
+    margin-bottom: 10px;
+}
+
+.resultado-titulo {
+    color: #FFD700;
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.resultado-valor {
+    color: #00ff88;
+    font-size: 38px;
+    font-weight: 900;
+    margin-bottom: 5px;
+    text-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+}
+
+.resultado-descricao {
+    color: #ccc;
+    font-size: 14px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.resultado-btn {
+    background: linear-gradient(145deg, #FFD700, #FFA500);
+    color: #1a1a2e;
+    border: none;
+    border-radius: 30px;
+    padding: 14px 40px;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    width: 100%;
+}
+
+.resultado-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 25px rgba(255, 215, 0, 0.6);
+}
+
+/* ============================================= */
+/* POPUP BÔNUS PÓS-CADASTRO                      */
+/* ============================================= */
+
+#popup-bonus-deposito {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 100001;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#popup-bonus-deposito.show {
+    display: flex;
+}
+
+.bonus-deposito-card {
+    background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+    border: 2px solid #00ff88;
+    border-radius: 20px;
+    padding: 30px 25px;
+    text-align: center;
+    max-width: 340px;
+    width: 90%;
+    box-shadow: 0 0 60px rgba(0, 255, 136, 0.15);
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.bonus-deposito-icone {
+    font-size: 50px;
+    margin-bottom: 10px;
+}
+
+.bonus-deposito-titulo {
+    color: #00ff88;
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.bonus-deposito-valor {
+    color: #FFD700;
+    font-size: 34px;
+    font-weight: 900;
+    margin-bottom: 5px;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+}
+
+.bonus-deposito-texto {
+    color: #ccc;
+    font-size: 14px;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.bonus-deposito-texto strong {
+    color: #FFD700;
+}
+
+.bonus-deposito-btn {
+    background: linear-gradient(145deg, #00ff88, #00cc6a);
+    color: #1a1a2e;
+    border: none;
+    border-radius: 30px;
+    padding: 14px 40px;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(0, 255, 136, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    width: 100%;
+}
+
+.bonus-deposito-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 25px rgba(0, 255, 136, 0.6);
+}
+
+/* Confetti simples */
+.confetti-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 100002;
+    overflow: hidden;
+}
+
+.confetti-piece {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    top: -10px;
+    animation: confettiFall 3s linear forwards;
+}
+
+@keyframes confettiFall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}

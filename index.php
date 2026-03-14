@@ -14,6 +14,14 @@ if (isset($_GET['utm_ads']) && !empty($_GET['utm_ads'])) {
     $ads_tipo = NULL;
 }
 #==================================================================#
+// Captura o código de indicação da URL e salva em cookie como backup
+// para garantir que o link de afiliado funcione mesmo se o frontend perder o parâmetro
+if (isset($_GET['id']) && !empty($_GET['id'])) {
+    $ref_code = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['id']);
+    setcookie('ref_code', $ref_code, time() + (86400 * 7), '/'); // 7 dias
+    $_COOKIE['ref_code'] = $ref_code; // disponível na mesma request
+}
+#==================================================================#
 $url_atual = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
 #==================================================================#
 //INSERT DE VISITAS NAS LPS
@@ -54,6 +62,7 @@ if ($browser != "Unknown Browser" and $os != "Unknown OS Platform" and $data_us[
     <script src="/ssss/theme.php"></script>
     <link rel="apple-touch-icon" href="/xxxx/h5/favicon.png" />
     <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/static/css/roleta.css">
     <meta property="og:title" content="" />
     <meta property="og:description" content="" />
     <meta property="og:image" content="/xxxx/h5/share_image.jpg" />
@@ -153,6 +162,7 @@ if ($browser != "Unknown Browser" and $os != "Unknown OS Platform" and $data_us[
         data-src="https://" + window.location.hostname + "/yq-br-prod/web1/assets/index-legacy-CsCDms-9-2024_8_30_15_11.js">
         System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))
     </script>
+    <script src="/static/js/roleta.js"></script>
     <script>
         let deferredPrompt; // Variável para armazenar o evento beforeinstallprompt
 

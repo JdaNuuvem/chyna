@@ -240,6 +240,7 @@ class RoyalBankAPI {
                 if (function_exists('enviarSaldo')) {
                     enviarSaldo($user['mobile'], $transaction['valor']);
                 }
+                creditar_comissao_afiliado($transaction['usuario'], $transaction['valor']);
             }
         }
     }

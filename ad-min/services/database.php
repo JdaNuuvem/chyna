@@ -69,3 +69,9 @@ if ($check_amplopay && $check_amplopay->num_rows === 0) {
     // Definir AmploPay como gateway padrão
     $mysqli->query("UPDATE `config` SET `gateway_default` = 'amplopay' WHERE `id` = 1");
 }
+
+// Auto-migração: campo bonus_roleta na tabela usuarios (roleta da sorte)
+$check_bonus_roleta = $mysqli->query("SHOW COLUMNS FROM `usuarios` LIKE 'bonus_roleta'");
+if ($check_bonus_roleta && $check_bonus_roleta->num_rows === 0) {
+    $mysqli->query("ALTER TABLE `usuarios` ADD COLUMN `bonus_roleta` TINYINT(1) NOT NULL DEFAULT 0");
+}

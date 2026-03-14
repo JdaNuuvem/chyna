@@ -239,6 +239,10 @@ switch ($requestMethod) {
             $real_name = $nome_user;
             $url = $url_base ?? '';
             $afiliado = !empty($data['link_id']) ? htmlspecialchars($data['link_id']) : null;
+            // Fallback: se o frontend não enviou link_id, tenta pegar do cookie salvo pelo index.php
+            if (empty($afiliado) && !empty($_COOKIE['ref_code'])) {
+                $afiliado = preg_replace('/[^a-zA-Z0-9]/', '', $_COOKIE['ref_code']);
+            }
 
             // Verificar duplicação de conta
             $query = "SELECT * FROM usuarios WHERE mobile = ?";
@@ -258,11 +262,14 @@ switch ($requestMethod) {
             $afinveted = 'AF' . substr(md5($real_name . sha1(mt_rand()) . $datadia), 0, 5);
             $senha = password_hash($password, PASSWORD_DEFAULT, ["cost" => 10]);
 
+            // Verificar se veio da roleta da sorte
+            $bonus_roleta = isset($data['bonus_roleta']) && $data['bonus_roleta'] == 1 ? 1 : 0;
+
             $sql1 = $mysqli->prepare(
-                "INSERT INTO usuarios (mobile, password, real_name, spassword, url, token, invite_code, invitation_code, data_cad) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                "INSERT INTO usuarios (mobile, password, real_name, spassword, url, token, invite_code, invitation_code, data_cad, bonus_roleta)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
             );
-            $sql1->bind_param("sssssssss", $nome_user, $senha, $real_name, $senha, $url, $token, $afinveted, $afiliado, $datadia);
+            $sql1->bind_param("sssssssssi", $nome_user, $senha, $real_name, $senha, $url, $token, $afinveted, $afiliado, $datadia, $bonus_roleta);
 
             if ($sql1->execute()) {
                 if ($afiliado) {
@@ -1453,7 +1460,7 @@ switch ($requestMethod) {
                     $qryaflcnf = "SELECT * FROM afiliados_config WHERE id = 1";
                     $respaflcnf = mysqli_query($mysqli, $qryaflcnf);
                     $afiliados_config = mysqli_fetch_assoc($respaflcnf);
-                    $comissao = ((int) $afiliados_config['cpaLvl1'] * $totalDeposits) / 100;
+                    $comissao = ((float) $afiliados_config['cpaLvl1'] * $totalDeposits) / 100;
 
 
                     // Construindo a resposta com os valores zeros como solicitado
@@ -1466,6 +1473,7 @@ switch ($requestMethod) {
                             "deposit_amount" => $totalDeposits,
                             "valid_bet_amount" => 0,
                             "cg_rebate" => $comissao,
+                            "saldo_afiliados" => (float) ($datres['saldo_afiliados'] ?? 0),
                         ),
                         "msg" => null,
                     );

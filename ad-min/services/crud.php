@@ -50,6 +50,101 @@ function enviarSaldo($email, $saldo)
 	}
 }
 
+/**
+ * Credita comissão CPA ao afiliado quando um depósito é confirmado.
+ * Deve ser chamada após confirmar o pagamento de um depósito.
+ *
+ * @param int $user_id ID do usuário que depositou
+ * @param float $valor_deposito Valor do depósito confirmado
+ */
+function creditar_comissao_afiliado($user_id, $valor_deposito)
+{
+	global $mysqli;
+
+	// Busca o invitation_code do depositante (quem o indicou)
+	$stmt = $mysqli->prepare("SELECT invitation_code FROM usuarios WHERE id = ?");
+	$stmt->bind_param("i", $user_id);
+	$stmt->execute();
+	$result = $stmt->get_result();
+	$depositante = $result->fetch_assoc();
+	$stmt->close();
+
+	if (!$depositante || empty($depositante['invitation_code'])) {
+		return; // Usuário não foi indicado por ninguém
+	}
+
+	// Busca config de afiliados
+	$qrycnf = "SELECT * FROM afiliados_config WHERE id = 1";
+	$rescnf = mysqli_query($mysqli, $qrycnf);
+	$afConfig = mysqli_fetch_assoc($rescnf);
+
+	if (!$afConfig) {
+		return;
+	}
+
+	$minDep = (float) ($afConfig['minDepForCpa'] ?? 0);
+	if ($valor_deposito < $minDep) {
+		return; // Depósito abaixo do mínimo para CPA
+	}
+
+	// ===== CPA Nível 1 (afiliado direto) =====
+	$cpaLvl1 = (float) ($afConfig['cpaLvl1'] ?? 0);
+	if ($cpaLvl1 > 0) {
+		$stmtRef = $mysqli->prepare("SELECT id, invite_code, invitation_code FROM usuarios WHERE invite_code = ?");
+		$stmtRef->bind_param("s", $depositante['invitation_code']);
+		$stmtRef->execute();
+		$resultRef = $stmtRef->get_result();
+		$referrer = $resultRef->fetch_assoc();
+		$stmtRef->close();
+
+		if ($referrer) {
+			$comissao1 = ($cpaLvl1 * $valor_deposito) / 100;
+			$stmtUpd = $mysqli->prepare("UPDATE usuarios SET saldo_afiliados = saldo_afiliados + ? WHERE id = ?");
+			$stmtUpd->bind_param("di", $comissao1, $referrer['id']);
+			$stmtUpd->execute();
+			$stmtUpd->close();
+
+			// ===== CPA Nível 2 (quem indicou o afiliado direto) =====
+			$cpaLvl2 = (float) ($afConfig['cpaLvl2'] ?? 0);
+			if ($cpaLvl2 > 0 && !empty($referrer['invitation_code'])) {
+				$stmtRef2 = $mysqli->prepare("SELECT id, invitation_code FROM usuarios WHERE invite_code = ?");
+				$stmtRef2->bind_param("s", $referrer['invitation_code']);
+				$stmtRef2->execute();
+				$resultRef2 = $stmtRef2->get_result();
+				$referrer2 = $resultRef2->fetch_assoc();
+				$stmtRef2->close();
+
+				if ($referrer2) {
+					$comissao2 = ($cpaLvl2 * $valor_deposito) / 100;
+					$stmtUpd2 = $mysqli->prepare("UPDATE usuarios SET saldo_afiliados = saldo_afiliados + ? WHERE id = ?");
+					$stmtUpd2->bind_param("di", $comissao2, $referrer2['id']);
+					$stmtUpd2->execute();
+					$stmtUpd2->close();
+
+					// ===== CPA Nível 3 =====
+					$cpaLvl3 = (float) ($afConfig['cpaLvl3'] ?? 0);
+					if ($cpaLvl3 > 0 && !empty($referrer2['invitation_code'])) {
+						$stmtRef3 = $mysqli->prepare("SELECT id FROM usuarios WHERE invite_code = ?");
+						$stmtRef3->bind_param("s", $referrer2['invitation_code']);
+						$stmtRef3->execute();
+						$resultRef3 = $stmtRef3->get_result();
+						$referrer3 = $resultRef3->fetch_assoc();
+						$stmtRef3->close();
+
+						if ($referrer3) {
+							$comissao3 = ($cpaLvl3 * $valor_deposito) / 100;
+							$stmtUpd3 = $mysqli->prepare("UPDATE usuarios SET saldo_afiliados = saldo_afiliados + ? WHERE id = ?");
+							$stmtUpd3->bind_param("di", $comissao3, $referrer3['id']);
+							$stmtUpd3->execute();
+							$stmtUpd3->close();
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 #diminuir saldo na api da fiverscan
 function withdrawSaldo($email, $saldo)
 {

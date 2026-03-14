@@ -168,6 +168,7 @@ switch ($action) {
         $saldo_result = false;
         if ($mobile) {
             $saldo_result = enviarSaldo($mobile, $tx['valor']);
+            creditar_comissao_afiliado($tx['usuario'], $tx['valor']);
         }
 
         echo json_encode([

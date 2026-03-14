@@ -158,6 +158,7 @@ while ($row = $result->fetch_assoc()) {
             $saldo_ok = false;
             if ($mobile) {
                 $saldo_ok = enviarSaldo($mobile, $row['valor']) == 1;
+                creditar_comissao_afiliado($row['usuario'], $row['valor']);
             }
 
             sync_log("  APROVADA: status=pago, mobile=$mobile, saldo_creditado=" . ($saldo_ok ? 'sim' : 'nao'));
